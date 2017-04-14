@@ -17,6 +17,7 @@
     "gulp-copy": "^1.0.0",
     "gulp-cssmin": "^0.1.7",
     "gulp-environments": "^0.1.2",
+    "gulp-htmlbuild": "^0.4.2",
     "gulp-run": "^1.7.1",
     "gulp-uglify": "^2.1.2",
     "gulp-watch": "^4.3.11",

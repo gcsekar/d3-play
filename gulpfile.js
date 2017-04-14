@@ -3,13 +3,14 @@ var chalk = require("chalk");
 var gulp = require("gulp");
 var color = require("gulp-color");
 var connect = require("gulp-connect");
-var run = require('gulp-run');
+var htmlbuild = require("gulp-htmlbuild");
+var run = require("gulp-run");
 var logger = console.log;
-var errored = chalk.bgRed;
-var warned = chalk.bgYellow;
-var succeeded = chalk.bgGreen;
+var errored = chalk.red;
+var warned = chalk.yellow;
+var succeeded = chalk.green;
 var head = chalk.inverse;
-var normal = chalk.bgBlue;
+var normal = chalk.blue;
 /* 
  * Gulp Declarations
  */
@@ -22,7 +23,7 @@ var cssmin = require("gulp-cssmin");
 var development = environments.development;
 var production = environments.production;
 
-var environment = production() ? "public/production" : "public/staging";
+var environment = production() ? "production" : "staging";
 var _port = production() ? 80 : 8080;
 /*
  * Vendor Compoenents & Styles
@@ -46,87 +47,132 @@ var fonts = [
  **************************/
 
 gulp.task("default",['environment','scripts','css','html','watch','server'],function(){
-//	run('watch');
-	console.log(environment);
+	success("Build succeeded !!");
 });
 
 gulp.task('html', function(){
-	return gulp.src("*.html")
-		.pipe(gulp.dest(environment))
+	warn("Staring Index.html files !!");	
+	return gulp.src("index.html")
+		.pipe(development(htmlbuild({
+			js:htmlbuild.preprocess.js(function(block){
+				warn("Starting " + environment + " index.html files !!");
+				block.write('/resources/js/app.js')
+				success("Completed " + environment + " index.html files !!");
+				block.end()
+			}),
+			css:htmlbuild.preprocess.css(function(block){
+				warn("Staring " + environment + " style.css files !!");
+				block.write('/resources/css/styles.css')
+				success("Completed " + environment + " style.css files !!");
+				block.end()
+			})			
+		})))
+		.pipe(production(htmlbuild({
+			js:htmlbuild.preprocess.js(function(block){
+				warn("Staring " + environment + " index.html files !!");
+				block.write('/resources/js/app.min.js')
+				success("Completed " + environment + " index.html files !!");
+				block.end()
+			}),
+			css:htmlbuild.preprocess.css(function(block){
+				warn("Staring " + environment + " style.min.css files !!");
+				block.write('/resources/css/styles.min.css')
+				success("Completed " + environment + " style.min.css files !!");
+				block.end()
+			})			
+		})))
+		.pipe(gulp.dest('public/' + environment))
 		.pipe(connect.reload());
 });
 
 gulp.task('scripts',['vendor-scripts'], function(){
-	
-		return gulp.src("resources/js/**/*.js")
+		warn("Processing Application Scripts !!")
+		return gulp.src(["resources/js/**/*.js","resources/vendor/js/**/*.js"])
 				.pipe(concat("app.js"))
 				.pipe(production(rename({suffix:".min"})))
 				.pipe(production(uglify()))
-				.pipe(gulp.dest(environment + '/resources/js'))
-				.pipe(connect.reload());
-		
+				.pipe(gulp.dest('public/' + environment + '/resources/js'))
+				.pipe(connect.reload())		
 });
 
 gulp.task('vendor-scripts', function(){
-	
+	warn("Starting vendor scripts ...")
     _.forEach(js, function (file, _) {
         gulp.src(file)
 			.pipe(production(rename({suffix:".min"})))
 			.pipe(production(uglify()))
-			.pipe(gulp.dest(environment + '/resources/vendor/js'))
+			.pipe(gulp.dest('/resources/vendor/js'))
     });
- 
+	success("Completed Vendor Scripts !!") 
 });
 
 gulp.task('vendor-styles',['vendor-fonts'], function(){
+	warn("Starting vendor scripts ...")	
     _.forEach(css, function (file, _) {
-        gulp.src(file)
+        var a = gulp.src(file)
 			.pipe(production(cssmin()))
 			.pipe(production(rename({suffix : ".min"})))
-			.pipe(gulp.dest(environment + '/resources/vendor/css'))
+			.pipe(gulp.dest('./resources/vendor/css'));
+
+        a.on('data', function(chunk){
+//	            var contents = chunk.contents.toString().trim(); 
+//	            var bufLength = process.stdout.columns;
+//	            var hr = '\n\n' + Array(bufLength).join("_") + '\n\n'
+//	            if (contents.length > 1) {
+//	                process.stdout.write(chunk.path + '\n' + contents + '\n');
+//	                process.stdout.write(chunk.path + hr);
+//	            }        	
+	        });
     });
+	success("Completed Vendor Styles !!")
 });
 
 gulp.task('vendor-fonts', function(){
+	warn("Processing Vendor fonts ...");
     _.forEach(fonts, function (file, _) {
         gulp.src(file)
-			.pipe(gulp.dest(environment + '/resources/vendor/fonts'))
+			.pipe(gulp.dest('public/'+environment + '/resources/fonts'))
     });
+    success("Completed processing Vendor Fonts !!")
 });
 
 
 gulp.task('css', ['vendor-styles'],function(){
-	return gulp.src("resources/css/*.css")
+	warn("Processing App Styles !!");
+	return gulp.src(['resources/vendor/css/**/*.css','resources/css/**/*.css'])
+			.pipe(concat("styles.css"))
 			.pipe(production(cssmin()))
 			.pipe(production(rename({suffix : ".min"})))
-			.pipe(gulp.dest(environment+'/resources/css'))
+			.pipe(gulp.dest('public/'+environment+'/resources/css/'))
 });
 
 gulp.task('data', function(){
+	warn("Processing data !!");
 	return gulp.src("resources/data/*.*")
-			.pipe(gulp.dest(environment+'/resources/data'));
+			.pipe(gulp.dest('public/'+environment+'/resources/data'))
 });
 
 gulp.task('images', function(){
+	warn("Processing images !!");
 	return gulp.src("resources/images/*.*")
-			.pipe(gulp.dest(environment+'/resources/images'));
+			.pipe(gulp.dest('public/'+environment+'/resources/images'))
 });
 
 gulp.task('vendor', function(){
+	warn("Processing Vendor Assets !!");
 	return gulp.src("vendor/**/*.*")
-			.pipe(gulp.dest(environment+'/vendor'));
+			.pipe(gulp.dest('public/'+environment+'/vendor'))
 });
 
 gulp.task('environment', function(){
-	header("This is a " + environment + " build ... ");
+	header("This is a build for " + environment + "... ");
 })
 
 gulp.task('server', function(){
 	connect.server({
-		root:environment,
+		root: 'public/' + environment,
 		livereload: development() ? true : false,
 		port: _port
-		
 	});
 });
 
@@ -134,8 +180,11 @@ gulp.task('reload', function(){
 	connect.reload();
 });
 gulp.task('watch', function(){
+	warn("Starting watch processes ...")
 	gulp.watch(['./resources/js/**/*.js'], ['scripts']);
+	gulp.watch(['./resources/css/**/*.css'], ['css']);
 	gulp.watch(['**/*.html'], ['html']);	
+	success("Started watch processes ...")
 });
 /***************************
  * Custom Functions
