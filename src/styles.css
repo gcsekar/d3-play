@@ -1,1 +1,25 @@
-/* You can add global styles to this file, and also import other style files */
+@media screen and (min-width: 1024px) {
+	.chart {
+		height: 500px;
+	}
+	.axis-x {
+		font-size: 10px;
+		font-weight: bold;
+	}
+	.axis-y {
+		font-size: 8px;
+		font-weight: bold;
+	}
+}
+
+@media screen and (max-width: 800px) {
+	.chart {
+		height: 250px;
+	}
+}
+
+@media screen and (max-width: 600px) {
+	.chart {
+		height: 100px;
+	}
+}
